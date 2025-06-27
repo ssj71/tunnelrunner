@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-
-#spencer and AI
+#spencer
 
 #an ascii terminal game for 80x24
 
@@ -12,39 +11,46 @@ REFRESHRATE_HZ = 60
 NROWS = 24
 NCOLS = 80
 WALL = "#"
+PLAYERCOL = 2
 
 SPIKINESS = 0
 TWISTINESS = 1
 
-#vars
+##vars
 running = True #flag for quitting time
-thescreen = bytearray(" ", "utf8") * (NROWS) * (NCOLS+1)
 you = [12.0, 0.0] #row, col
 yourvel = [0.0, 5.0] #row per sec, col per sec
+distance = 0 #score
+fuel = 4
 camera = 0 #row offset
+#cave stuff
 cavefloor = [1] * (NCOLS+1) #row change per col
 caveceil = [NROWS-1] * (NCOLS+1) #row change per col
 caveindex = 0 #this is the index of the oldest column that isn't shown
 middle = NROWS // 2 #this creates the optimal trajectory
-headroom = NROWS // 4 #this determines how tight the cave currently is
-
-for i in range(NROWS-1):
-    thescreen[(NCOLS+1)*(i+1)] = ord("\n")
-
-def rowcol(r,c):
-    #we have a newline as the 81st char in each row
-    return (NROWS-r)*(NCOLS+1)+c
-
-def hud():
-    pass
-
+headroom = NROWS // 2 - 2 #this determines how tight the cave currently is
 
 def paint(r, c, s):
     print(f"\033[{NROWS-r};{c+1}H{s}", end="")
 
+#paint upwards in a column
 def paintcol(rstart, rend, c, s):
     for r in range(min(max(rstart,1),NROWS-1), min(max(rend,1),NROWS)):
         paint(r, c, s)
+
+def hud(distance, fuel):
+    paint(0, 0, f"DIST:{int(distance//5):>14}")
+    fuelstring = "$" * m.ceil(fuel)
+    paint(0, NCOLS//2, f"FUEL:{fuelstring:>14}")
+    pass
+
+def player(dt):
+    r0 = round(you[0])
+    you[0] += yourvel[0] * dt
+    you[1] += yourvel[1] * dt
+    r1 = round(you[0])
+    return r1-r0
+
 
 def firstcave():
     print("\033[H\033[2J", WALL*NCOLS, "\n" * (NROWS-2), WALL*NCOLS, sep="", end="", flush=True)
@@ -52,24 +58,15 @@ def firstcave():
 def cavify(advance, camerachange):
     for _ in range(advance):
         #generate the next cave section
-        global caveindex, cavefloor, caveceil, headroom, middle
+        global camera, caveindex, cavefloor, caveceil, headroom, middle
+        caveindex = (caveindex + 1) % (NCOLS + 1)
         lastnew = (caveindex - 2) % (NCOLS + 1)
         #probabilities
-        #bias to be around size of screen
-        #make it never closed
-
-        #headroom = caveceil[lastnew] - middle
-        #footroom = middle - cavefloor[lastnew]
-
         middle += random.randint(-1,1)
 
+
         targetheadroom = NROWS // 4
-
-        #need to accomodate thr > hr and visa versa
         err = targetheadroom - headroom
-        #if the hr is exactly at thr what should the probalility be? 50/50 up or down 1/4 thr
-        #if hr is higher it should be biased to come down etc
-
         var = round(TWISTINESS)
         if headroom < 3:
             headroom += random.randint(0,var)
@@ -83,47 +80,64 @@ def cavify(advance, camerachange):
         var = round(SPIKINESS)
         newfloor = middle - headroom - min(random.randint(0, var), random.randint(0, var))
         newceil = middle + headroom + min(random.randint(0, var), random.randint(0, var))
+
         newindex = (caveindex - 1) % (NCOLS + 1)
         cavefloor[newindex] = newfloor
         caveceil[newindex] = newceil
 
+        #auto camera movement
+        #if middle - camera > NROWS-1:
+        #    camerachange = 1
+        #elif middle - camera < 2:
+        #    camerachange = -1
+        #else:
+        #    camerachange = 0
+        camera += camerachange
 
         #render
-        #TODO: camera movement
         for j in range(NCOLS): 
             #print each column starting with the oldest
             prev = (caveindex + j) % (NCOLS + 1)
-            i = (caveindex + j + 1) % (NCOLS + 1)
+            i = (caveindex + j + advance) % (NCOLS + 1)
             #ceiling
-            if caveceil[prev] > caveceil[i] and caveceil[i] < NROWS:
-                paintcol(caveceil[i], caveceil[prev], j, WALL)
-            elif caveceil[prev] < caveceil[i]:
-                paintcol(caveceil[prev], caveceil[i], j,  " ")
+            if caveceil[prev] > caveceil[i] - camerachange and caveceil[i] - camera < NROWS:
+                paintcol(caveceil[i] - camera, caveceil[prev] - camera + camerachange, j, WALL)
+            elif caveceil[prev] < caveceil[i] - camerachange:
+                paintcol(caveceil[prev] - camera + camerachange, caveceil[i] - camera, j,  " ")
             else:
                 pass
             #floor
-            if cavefloor[prev] < cavefloor[i]:
-                paintcol(cavefloor[prev], cavefloor[i]+1, j, WALL)
-            elif cavefloor[prev] > cavefloor[i]:
-                paintcol(cavefloor[i]+1, cavefloor[prev]+1, j, " ")
+            if cavefloor[prev] < cavefloor[i] - camerachange:
+                paintcol(cavefloor[prev] - camera + camerachange, cavefloor[i] - camera + 1, j, WALL)
+            elif cavefloor[prev] > cavefloor[i] - camerachange: #camerachange = +1
+                paintcol(cavefloor[i] - camera + 1, cavefloor[prev] - camera + camerachange + 1, j, " ")
             else:
                 pass
-        caveindex = (caveindex + 1) % (NCOLS + 1)
     print("", sep="", end="", flush=True)
 
-def render():
-    #print("\033[H\033[2J", thescreen.decode("utf8"), sep="", end="", flush=True)
-    #cavify():
-    pass
+def movecamera(you, camera):
+    if round(you[0] - camera) > NROWS - 1:
+        return 1
+    elif round(you[0] - camera) < 2:
+        return -1
+    else:
+        return 0
 
 def updatestuff(dt):
-    #thescreen[rowcol(m.floor(you[0]), m.floor(you[1]))] = ord(" ")
-    #you[0] += yourvel[0] * dt
-    #thescreen[rowcol(m.floor(you[0]), m.floor(you[1]))] = ord(">")
-    you[1] += yourvel[1] * dt
-    cavify(m.floor(you[1]), 0)
+    global camera, distance
+    distance += yourvel[1] * dt
+    vert = player(dt)
+    advance = m.floor(you[1])
+    if vert:
+        paint(round(you[0] - camera - vert), PLAYERCOL, " ")
+        camerachange = movecamera(you, camera)
+    else:
+        camerachange = 0
+    cavify(advance, camerachange)
     you[1] %= 1.0
-    pass
+    if vert:
+        paint(round(you[0] - camera), PLAYERCOL, ">")
+    hud(distance, fuel)
 
 def on_press(key):
     """
@@ -137,12 +151,16 @@ def on_press(key):
             key_char = key.char.lower() # Convert to lowercase for case-insensitivity
             if key_char == 'w':
                 print("\nW (Move Up)") # Added \n for cleaner output with period
+                yourvel[0] += 1
             elif key_char == 'a':
                 print("\nA (Move Left)")
+                yourvel[1] += -1
             elif key_char == 's':
                 print("\nS (Move Down)")
+                yourvel[0] += -1
             elif key_char == 'd':
                 print("\nD (Move Right)")
+                yourvel[1] += 1
             elif key_char == ' ':
                 print("\nSpace (Jump/Action)")
             elif key_char == 'q':
@@ -185,10 +203,10 @@ listener.start() # Start the listener thread
 # Main loop that prints a period every second
 lasttime = time.time()
 firstcave()
+paint(round(you[0] - camera), PLAYERCOL, ">")
 while running:
     now = time.time()
     updatestuff(now - lasttime)
-    render()
     lasttime = now
     time.sleep(1/REFRESHRATE_HZ)
 
