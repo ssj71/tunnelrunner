@@ -13,6 +13,9 @@ NROWS = 24
 NCOLS = 80
 WALL = "#"
 
+SPIKINESS = 0
+TWISTINESS = 1
+
 #vars
 running = True #flag for quitting time
 thescreen = bytearray(" ", "utf8") * (NROWS) * (NCOLS+1)
@@ -22,6 +25,8 @@ camera = 0 #row offset
 cavefloor = [1] * (NCOLS+1) #row change per col
 caveceil = [NROWS-1] * (NCOLS+1) #row change per col
 caveindex = 0 #this is the index of the oldest column that isn't shown
+middle = NROWS // 2 #this creates the optimal trajectory
+headroom = NROWS // 4 #this determines how tight the cave currently is
 
 for i in range(NROWS-1):
     thescreen[(NCOLS+1)*(i+1)] = ord("\n")
@@ -38,7 +43,7 @@ def paint(r, c, s):
     print(f"\033[{NROWS-r};{c+1}H{s}", end="")
 
 def paintcol(rstart, rend, c, s):
-    for r in range(min(max(rstart,1),NROWS-1), min(max(rend,1),NROWS-1)):
+    for r in range(min(max(rstart,1),NROWS-1), min(max(rend,1),NROWS)):
         paint(r, c, s)
 
 def firstcave():
@@ -47,33 +52,62 @@ def firstcave():
 def cavify(advance, camerachange):
     for _ in range(advance):
         #generate the next cave section
-        global caveindex, cavefloor, caveceil
+        global caveindex, cavefloor, caveceil, headroom, middle
         lastnew = (caveindex - 2) % (NCOLS + 1)
-        newfloor = cavefloor[lastnew] + random.randint(-3, 3)
-        newceil = caveceil[lastnew] + random.randint(-3, 3)
-        new = (caveindex - 1) % (NCOLS + 1)
-        cavefloor[new] = newfloor
-        caveceil[new] = newceil
+        #probabilities
+        #bias to be around size of screen
+        #make it never closed
+
+        #headroom = caveceil[lastnew] - middle
+        #footroom = middle - cavefloor[lastnew]
+
+        middle += random.randint(-1,1)
+
+        targetheadroom = NROWS // 4
+
+        #need to accomodate thr > hr and visa versa
+        err = targetheadroom - headroom
+        #if the hr is exactly at thr what should the probalility be? 50/50 up or down 1/4 thr
+        #if hr is higher it should be biased to come down etc
+
+        var = round(TWISTINESS)
+        if headroom < 3:
+            headroom += random.randint(0,var)
+        elif err > 0:
+            headroom += random.randint(-var,0) + max(random.randint(0, var), random.randint(0, var))
+        elif err < 0:
+            headroom += min(random.randint(-var, 0), random.randint(-var,0)) + random.randint(0,var)
+        else:
+            headroom += random.randint(-var, 0) + random.randint(0,var)
+
+        var = round(SPIKINESS)
+        newfloor = middle - headroom - min(random.randint(0, var), random.randint(0, var))
+        newceil = middle + headroom + min(random.randint(0, var), random.randint(0, var))
+        newindex = (caveindex - 1) % (NCOLS + 1)
+        cavefloor[newindex] = newfloor
+        caveceil[newindex] = newceil
+
+
+        #render
         #TODO: camera movement
-        #TODO: probabilities
         for j in range(NCOLS): 
             #print each column starting with the oldest
             prev = (caveindex + j) % (NCOLS + 1)
             i = (caveindex + j + 1) % (NCOLS + 1)
-            if caveceil[prev] > caveceil[i]:
+            #ceiling
+            if caveceil[prev] > caveceil[i] and caveceil[i] < NROWS:
                 paintcol(caveceil[i], caveceil[prev], j, WALL)
             elif caveceil[prev] < caveceil[i]:
-                #print walls
                 paintcol(caveceil[prev], caveceil[i], j,  " ")
+            else:
                 pass
-            #else don't print anything
+            #floor
             if cavefloor[prev] < cavefloor[i]:
                 paintcol(cavefloor[prev], cavefloor[i]+1, j, WALL)
-                pass
             elif cavefloor[prev] > cavefloor[i]:
                 paintcol(cavefloor[i]+1, cavefloor[prev]+1, j, " ")
+            else:
                 pass
-            #else don't print anything
         caveindex = (caveindex + 1) % (NCOLS + 1)
     print("", sep="", end="", flush=True)
 
