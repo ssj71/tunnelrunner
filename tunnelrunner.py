@@ -33,13 +33,17 @@ headroom = NROWS // 2 - 2 #this determines how tight the cave currently is
 def paint(r, c, s):
     print(f"\033[{NROWS-r};{c+1}H{s}", end="")
 
-#paint upwards in a column
+def paintif(r, c, s):
+    if r and r < NROWS and c and c < NCOLS:
+        paint(r, c, s)
+
+#paint upwards along a column
 def paintcol(rstart, rend, c, s):
     for r in range(min(max(rstart,1),NROWS-1), min(max(rend,1),NROWS)):
         paint(r, c, s)
 
 def hud(distance, fuel):
-    paint(0, 0, f"DIST:{int(distance//5):>14}")
+    paint(0, 0, f"DIST:{distance:>14}")
     fuelstring = "$" * m.ceil(fuel)
     paint(0, NCOLS//2, f"FUEL:{fuelstring:>14}")
     pass
@@ -85,15 +89,6 @@ def cavify(advance, camerachange):
         cavefloor[newindex] = newfloor
         caveceil[newindex] = newceil
 
-        #auto camera movement
-        #if middle - camera > NROWS-1:
-        #    camerachange = 1
-        #elif middle - camera < 2:
-        #    camerachange = -1
-        #else:
-        #    camerachange = 0
-        camera += camerachange
-
         #render
         for j in range(NCOLS): 
             #print each column starting with the oldest
@@ -113,12 +108,24 @@ def cavify(advance, camerachange):
                 paintcol(cavefloor[i] - camera + 1, cavefloor[prev] - camera + camerachange + 1, j, " ")
             else:
                 pass
+
+    if not advance and camerachange > 0:
+        for j in range(NCOLS):
+            i = (caveindex + j + 1) % (NCOLS + 1)
+            paintif(caveceil[i] - camera, j, WALL)
+            paintif(cavefloor[i] - camera + camerachange, j, " ")
+    elif not advance and camerachange < 0:
+        for j in range(NCOLS):
+            i = (caveindex + j + 1) % (NCOLS + 1)
+            paintif(caveceil[i] - camera + camerachange , j, " ")
+            paintif(cavefloor[i] - camera, j, WALL)
     print("", sep="", end="", flush=True)
 
 def movecamera(you, camera):
-    if round(you[0] - camera) > NROWS - 1:
+    edge = 3
+    if round(you[0] - camera) > NROWS - edge:
         return 1
-    elif round(you[0] - camera) < 2:
+    elif round(you[0] - camera) < edge:
         return -1
     else:
         return 0
@@ -128,16 +135,16 @@ def updatestuff(dt):
     distance += yourvel[1] * dt
     vert = player(dt)
     advance = m.floor(you[1])
-    if vert:
+    camerachange = 0
+    if vert != 0:
         paint(round(you[0] - camera - vert), PLAYERCOL, " ")
         camerachange = movecamera(you, camera)
-    else:
-        camerachange = 0
+        camera += camerachange
     cavify(advance, camerachange)
     you[1] %= 1.0
     if vert:
         paint(round(you[0] - camera), PLAYERCOL, ">")
-    hud(distance, fuel)
+    hud(int(distance//5), fuel)
 
 def on_press(key):
     """
