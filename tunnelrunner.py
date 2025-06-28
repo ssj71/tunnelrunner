@@ -19,7 +19,7 @@ TWISTINESS = 1
 ##vars
 running = True #flag for quitting time
 you = [12.0, 0.0] #row, col
-yourvel = [0.0, 5.0] #row per sec, col per sec
+yourvel = [0.0, 10.0] #row per sec, col per sec
 distance = 0 #score
 fuel = 4
 camera = 0 #row offset
@@ -50,7 +50,10 @@ def hud(distance, fuel):
 
 def player(dt):
     r0 = round(you[0])
-    you[0] += yourvel[0] * dt
+    you[0] += yourvel[0]
+    yourvel[0] = 0
+    if yourvel[1] < 0:
+        yourvel[1] = 0
     you[1] += yourvel[1] * dt
     r1 = round(you[0])
     return r1-r0
@@ -157,23 +160,23 @@ def on_press(key):
         if key.char:
             key_char = key.char.lower() # Convert to lowercase for case-insensitivity
             if key_char == 'w':
-                yourvel[0] += 2
+                yourvel[0] += 1
             elif key_char == 'a':
-                yourvel[1] -= 1
+                yourvel[1] -= 2
             elif key_char == 's':
-                yourvel[0] -= 2
+                yourvel[0] -= 1
             elif key_char == 'd':
-                yourvel[1] += 1
+                yourvel[1] += 2
             elif key_char == ' ':
                 pass
             elif key_char == 'h':
-                yourvel[1] -= 1
+                yourvel[1] -= 2
             elif key_char == 'j':
-                yourvel[0] -= 2
+                yourvel[0] -= 1
             elif key_char == 'k':
-                yourvel[0] += 2
+                yourvel[0] += 1
             elif key_char == 'l':
-                yourvel[1] += 1
+                yourvel[1] += 2
             elif key_char == 'q':
                 print("\nq pressed. Exiting.")
                 running = False # Set flag to False to stop the main loop
@@ -181,13 +184,13 @@ def on_press(key):
     except AttributeError:
         # Handle special keys (arrow keys, escape)
         if key == keyboard.Key.up:
-            yourvel[0] += 2
+            yourvel[0] += 1
         elif key == keyboard.Key.down:
-            yourvel[0] -= 2
+            yourvel[0] -= 1
         elif key == keyboard.Key.left:
-            yourvel[1] -= 1
+            yourvel[1] -= 2
         elif key == keyboard.Key.right:
-            yourvel[1] += 1
+            yourvel[1] += 2
         elif key == keyboard.Key.esc:
             print("\nEscape pressed. Exiting.")
             running = False # Set flag to False to stop the main loop
