@@ -157,36 +157,36 @@ def on_press(key):
         if key.char:
             key_char = key.char.lower() # Convert to lowercase for case-insensitivity
             if key_char == 'w':
-                print("\nW (Move Up)") # Added \n for cleaner output with period
-                yourvel[0] += 1
+                yourvel[0] += 2
             elif key_char == 'a':
-                print("\nA (Move Left)")
-                yourvel[1] += -1
+                yourvel[1] -= 1
             elif key_char == 's':
-                print("\nS (Move Down)")
-                yourvel[0] += -1
+                yourvel[0] -= 2
             elif key_char == 'd':
-                print("\nD (Move Right)")
                 yourvel[1] += 1
             elif key_char == ' ':
-                print("\nSpace (Jump/Action)")
+                pass
+            elif key_char == 'h':
+                yourvel[1] -= 1
+            elif key_char == 'j':
+                yourvel[0] -= 2
+            elif key_char == 'k':
+                yourvel[0] += 2
+            elif key_char == 'l':
+                yourvel[1] += 1
             elif key_char == 'q':
-                print("\nQ pressed. Exiting.")
+                print("\nq pressed. Exiting.")
                 running = False # Set flag to False to stop the main loop
                 return False # Stop the keyboard listener
     except AttributeError:
         # Handle special keys (arrow keys, escape)
         if key == keyboard.Key.up:
-            print("\nUp Arrow (Move Up)")
-            yourvel[0] += 1
+            yourvel[0] += 2
         elif key == keyboard.Key.down:
-            print("\nDown Arrow (Move Down)")
-            yourvel[0] -= 1
+            yourvel[0] -= 2
         elif key == keyboard.Key.left:
-            print("\nLeft Arrow (Move Left)")
             yourvel[1] -= 1
         elif key == keyboard.Key.right:
-            print("\nRight Arrow (Move Right)")
             yourvel[1] += 1
         elif key == keyboard.Key.esc:
             print("\nEscape pressed. Exiting.")
