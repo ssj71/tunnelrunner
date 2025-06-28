@@ -34,7 +34,7 @@ def paint(r, c, s):
     print(f"\033[{NROWS-r};{c+1}H{s}", end="")
 
 def paintif(r, c, s):
-    if r and r < NROWS and c and c < NCOLS:
+    if r >= 0  and r < NROWS and c >= 0 and c < NCOLS:
         paint(r, c, s)
 
 #paint upwards along a column
@@ -102,7 +102,7 @@ def cavify(advance, camerachange):
             else:
                 pass
             #floor
-            if cavefloor[prev] < cavefloor[i] - camerachange:
+            if cavefloor[prev] < cavefloor[i] - camerachange and cavefloor[prev] - camera + camerachange > 0:
                 paintcol(cavefloor[prev] - camera + camerachange, cavefloor[i] - camera + 1, j, WALL)
             elif cavefloor[prev] > cavefloor[i] - camerachange: #camerachange = +1
                 paintcol(cavefloor[i] - camera + 1, cavefloor[prev] - camera + camerachange + 1, j, " ")
