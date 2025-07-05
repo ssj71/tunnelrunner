@@ -13,7 +13,7 @@ NCOLS = 80
 WALL = "#"
 PLAYERCOL = 2
 
-SPIKINESS = 0
+SPIKINESS = 2
 TWISTINESS = 1
 BURNRATE = .1 #fuel per sec, and cost of vertical climb
 
@@ -112,8 +112,8 @@ def cavify(advance, camerachange):
             headroom += random.randint(-var, 0) + random.randint(0,var)
 
         var = round(SPIKINESS)
-        newfloor = middle - headroom - min(random.randint(0, var), random.randint(0, var))
-        newceil = middle + headroom + min(random.randint(0, var), random.randint(0, var))
+        newfloor = middle - headroom - random.randint(0, var)
+        newceil = middle + headroom + random.randint(0, var)
 
         newindex = (caveindex - 1) % (NCOLS + 1)
         cavefloor[newindex] = newfloor
