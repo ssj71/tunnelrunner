@@ -15,6 +15,7 @@ PLAYERCOL = 2
 
 SPIKINESS = 0
 TWISTINESS = 1
+BURNRATE = .1 #fuel per sec, and cost of vertical climb
 
 ##vars
 running = True #flag for quitting time
@@ -22,6 +23,8 @@ you = [12.0, 0.0] #row, col
 yourvel = [0.0, 10.0] #row per sec, col per sec
 distance = 0 #score
 fuel = 4
+gas = [0] * (NCOLS+1) #placement of fuel powerups
+gastime = 0
 camera = 0 #row offset
 #cave stuff
 cavefloor = [1] * (NCOLS+1) #row change per col
@@ -133,10 +136,38 @@ def movecamera(you, camera):
     else:
         return 0
 
+def fuelify(dt, advance, camerachange):
+    global camera, caveindex, gas, gastime
+    #caveindex is the oldest column and not drawn
+    prevcam = camera - camerachange
+    if advance:
+        for i in range(NCOLS + 1):
+            j = (caveindex + i) % (NCOLS + 1)
+            jp = (caveindex + i - 1) % (NCOLS + 1) #j previous
+            if gas[jp] and gas[jp] > cavefloor[j] + camerachange and gas[jp] < caveceil[j] + camerachange:
+                paintif(gas[jp] - prevcam, i, " ")    
+            #else it's already painted over by cave wall
+            if gas[j]:
+                paintif(gas[j] - camera, i, "$")    
+        gas[caveindex] = 0
+    elif camerachange:
+        #TODO:
+        pass
+    gastime += dt
+    if gastime > 1 and not gas[caveindex]: #TODO: change time to 3
+        gastime = 0
+        gas[caveindex] = random.randint(cavefloor[caveindex] + 1, caveceil[caveindex] - 1)
+
 def updatestuff(dt):
-    global camera, distance
+    global camera, distance, fuel
     distance += yourvel[1] * dt
     vert = player(dt)
+    if m.ceil(fuel) < m.ceil(fuel - vert * BURNRATE):
+        fuel -= dt * BURNRATE #don't make the fuel go up
+    else:
+        fuel -= (vert + dt) * BURNRATE 
+    fuel = max(fuel, 0.0);
+
     advance = m.floor(you[1])
     camerachange = 0
     if vert != 0:
@@ -144,6 +175,7 @@ def updatestuff(dt):
         camerachange = movecamera(you, camera)
         camera += camerachange
     cavify(advance, camerachange)
+    fuelify(dt, advance, camerachange)
     you[1] %= 1.0
     if vert:
         paint(round(you[0] - camera), PLAYERCOL, ">")
@@ -153,44 +185,46 @@ def on_press(key):
     """
     Function to handle key press events.
     """
-    global running # Declare 'running' as global to modify it
+    global fuel, running # Declare 'running' as global to modify it
+    dx = 2
+    dy = 1
 
     try:
         # Check for alphanumeric keys (wasd, space)
         if key.char:
             key_char = key.char.lower() # Convert to lowercase for case-insensitivity
-            if key_char == 'w':
-                yourvel[0] += 1
+            if key_char == 'w' and fuel >= 0:
+                yourvel[0] += dy
             elif key_char == 'a':
-                yourvel[1] -= 2
+                yourvel[1] -= dx
             elif key_char == 's':
-                yourvel[0] -= 1
+                yourvel[0] -= dy
             elif key_char == 'd':
-                yourvel[1] += 2
+                yourvel[1] += dx
             elif key_char == ' ':
                 pass
             elif key_char == 'h':
-                yourvel[1] -= 2
+                yourvel[1] -= dx
             elif key_char == 'j':
-                yourvel[0] -= 1
-            elif key_char == 'k':
-                yourvel[0] += 1
+                yourvel[0] -= dy
+            elif key_char == 'k' and fuel >= 0:
+                yourvel[0] += dy
             elif key_char == 'l':
-                yourvel[1] += 2
+                yourvel[1] += dx
             elif key_char == 'q':
                 print("\nq pressed. Exiting.")
                 running = False # Set flag to False to stop the main loop
                 return False # Stop the keyboard listener
     except AttributeError:
         # Handle special keys (arrow keys, escape)
-        if key == keyboard.Key.up:
-            yourvel[0] += 1
+        if key == keyboard.Key.up and fuel >= 0:
+            yourvel[0] += dy
         elif key == keyboard.Key.down:
-            yourvel[0] -= 1
+            yourvel[0] -= dy
         elif key == keyboard.Key.left:
-            yourvel[1] -= 2
+            yourvel[1] -= dx
         elif key == keyboard.Key.right:
-            yourvel[1] += 2
+            yourvel[1] += dx
         elif key == keyboard.Key.esc:
             print("\nEscape pressed. Exiting.")
             running = False # Set flag to False to stop the main loop
