@@ -193,16 +193,15 @@ def collision():
     global you, yourvel, fuel
     r = round(you[0])
     c = (caveindex + PLAYERCOL) % (NCOLS + 1)
-    if gas[c] == r:
+    if gas[c] and gas[c] == r:
         fuel += 1.0 #add fuel
-        gas[c] = 0 #remove fuel
+        gas[c] = 0 #remove fuel PU
     if cavefloor[c] >= r or caveceil[c] <= r:
-        fuel = 0
         return True
     return False
 
 def updatestuff(dt):
-    global camera, distance, fuel
+    global camera, distance, fuel, running
     distance += yourvel[1] * dt
     vert = player(dt)
     if m.ceil(fuel) < m.ceil(fuel - vert * BURNRATE):
@@ -224,7 +223,6 @@ def updatestuff(dt):
 
     you[1] %= 1.0
     if ded:
-        global running
         paint(round(you[0] - camera), PLAYERCOL, bcolors.RED + bcolors.BOLD + "X" + bcolors.ENDC)
         hud(int(distance//5), fuel)
         print("\nYou crashed! Game over. Press 'q' to exit.")
@@ -245,7 +243,7 @@ def on_press(key):
         # Check for alphanumeric keys (wasd, space)
         if key.char:
             key_char = key.char.lower() # Convert to lowercase for case-insensitivity
-            if key_char == 'w' and fuel >= 0:
+            if key_char == 'w' and fuel > 0:
                 yourvel[0] += dy
             elif key_char == 'a':
                 yourvel[1] -= dx
@@ -259,7 +257,7 @@ def on_press(key):
                 yourvel[1] -= dx
             elif key_char == 'j':
                 yourvel[0] -= dy
-            elif key_char == 'k' and fuel >= 0:
+            elif key_char == 'k' and fuel > 0:
                 yourvel[0] += dy
             elif key_char == 'l':
                 yourvel[1] += dx
@@ -269,7 +267,7 @@ def on_press(key):
                 return False # Stop the keyboard listener
     except AttributeError:
         # Handle special keys (arrow keys, escape)
-        if key == keyboard.Key.up and fuel >= 0:
+        if key == keyboard.Key.up and fuel > 0:
             yourvel[0] += dy
         elif key == keyboard.Key.down:
             yourvel[0] -= dy
