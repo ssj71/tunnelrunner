@@ -1,0 +1,9 @@
+just a little game because I've never made a terminal game  before and I wanted to make something generative.
+
+just run the tunnelrunner.py file with python3.
+
+it does depend on pynput so you may need to install that with pip3 install pynput
+
+control it with wasd, vim keys, or arrow keys. q or esc to quit.
+
+go as far as you can without hitting the walls or running out of fuel.
