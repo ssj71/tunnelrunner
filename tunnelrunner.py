@@ -3,7 +3,7 @@
 
 #an ascii terminal game for 80x24
 
-import time, math as m, random
+import time, math as m, random, os
 from pynput import keyboard
 
 ##CONFIGURATION
@@ -32,6 +32,30 @@ caveceil = [NROWS-1] * (NCOLS+1) #row change per col
 caveindex = 0 #this is the index of the oldest column that isn't shown
 middle = NROWS // 2 #this creates the optimal trajectory
 headroom = NROWS // 2 - 2 #this determines how tight the cave currently is
+
+if os.name == "nt":
+
+    class bcolors:
+        HEADER = ""
+        BLUE = ""
+        GREEN = ""
+        YELLOW = ""
+        RED = ""
+        ENDC = ""
+        BOLD = ""
+        UNDERLINE = ""
+
+else:
+
+    class bcolors:
+        HEADER = "\033[35m"
+        BLUE = "\033[34m"
+        GREEN = "\033[32m"
+        YELLOW = "\033[33m"
+        RED = "\033[31m"
+        ENDC = "\033[0m"
+        BOLD = "\033[1m"
+        UNDERLINE = "\033[4m"
 
 def paint(r, c, s):
     print(f"\033[{NROWS-r};{c+1}H{s}", end="")
@@ -141,22 +165,41 @@ def fuelify(dt, advance, camerachange):
     #caveindex is the oldest column and not drawn
     prevcam = camera - camerachange
     if advance:
-        for i in range(NCOLS + 1):
+        for i in range(1, NCOLS + 1):
             j = (caveindex + i) % (NCOLS + 1)
             jp = (caveindex + i - 1) % (NCOLS + 1) #j previous
             if gas[jp] and gas[jp] > cavefloor[j] + camerachange and gas[jp] < caveceil[j] + camerachange:
-                paintif(gas[jp] - prevcam, i, " ")    
+                paintif(gas[jp] - prevcam, i, " ")
             #else it's already painted over by cave wall
             if gas[j]:
-                paintif(gas[j] - camera, i, "$")    
+                paintif(gas[j] - camera, i, bcolors.YELLOW + "$" + bcolors.ENDC)
+        if gas[caveindex] and gas[caveindex] > cavefloor[j] + camerachange and gas[jp] < caveceil[j] + camerachange:
+            paintif(gas[jp] - prevcam, i, " ")
         gas[caveindex] = 0
     elif camerachange:
-        #TODO:
-        pass
+        for i in range(1, NCOLS + 1):
+            j = (caveindex + i) % (NCOLS + 1)
+            if gas[j] and gas[j] > cavefloor[j] + camerachange and gas[j] < caveceil[j] + camerachange:
+                paintif(gas[j] - prevcam, i, " ")
+            #else it's already painted over by cave wall
+            if gas[j]:
+                paintif(gas[j] - camera, i, bcolors.YELLOW + "$" + bcolors.ENDC)
     gastime += dt
-    if gastime > 1 and not gas[caveindex]: #TODO: change time to 3
+    if gastime > 3 and not gas[caveindex]:
         gastime = 0
         gas[caveindex] = random.randint(cavefloor[caveindex] + 1, caveceil[caveindex] - 1)
+
+def collision():
+    global you, yourvel, fuel
+    r = round(you[0])
+    c = (caveindex + PLAYERCOL) % (NCOLS + 1)
+    if gas[c] == r:
+        fuel += 1.0 #add fuel
+        gas[c] = 0 #remove fuel
+    if cavefloor[c] >= r or caveceil[c] <= r:
+        fuel = 0
+        return True
+    return False
 
 def updatestuff(dt):
     global camera, distance, fuel
@@ -165,7 +208,7 @@ def updatestuff(dt):
     if m.ceil(fuel) < m.ceil(fuel - vert * BURNRATE):
         fuel -= dt * BURNRATE #don't make the fuel go up
     else:
-        fuel -= (vert + dt) * BURNRATE 
+        fuel -= (vert + dt) * BURNRATE
     fuel = max(fuel, 0.0);
 
     advance = m.floor(you[1])
@@ -174,11 +217,20 @@ def updatestuff(dt):
         paint(round(you[0] - camera - vert), PLAYERCOL, " ")
         camerachange = movecamera(you, camera)
         camera += camerachange
+
     cavify(advance, camerachange)
+    ded = collision()
     fuelify(dt, advance, camerachange)
+
     you[1] %= 1.0
-    if vert:
-        paint(round(you[0] - camera), PLAYERCOL, ">")
+    if ded:
+        global running
+        paint(round(you[0] - camera), PLAYERCOL, bcolors.RED + bcolors.BOLD + "X" + bcolors.ENDC)
+        hud(int(distance//5), fuel)
+        print("\nYou crashed! Game over. Press 'q' to exit.")
+        running = False
+    elif vert:
+        paint(round(you[0] - camera), PLAYERCOL, bcolors.GREEN + bcolors.BOLD + ">" + bcolors.ENDC)
     hud(int(distance//5), fuel)
 
 def on_press(key):
@@ -247,7 +299,7 @@ listener.start() # Start the listener thread
 # Main loop that prints a period every second
 lasttime = time.time()
 firstcave()
-paint(round(you[0] - camera), PLAYERCOL, ">")
+paint(round(you[0] - camera), PLAYERCOL, bcolors.GREEN + bcolors.BOLD + ">" + bcolors.ENDC)
 while running:
     now = time.time()
     updatestuff(now - lasttime)
