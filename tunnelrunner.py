@@ -72,7 +72,10 @@ def paintcol(rstart, rend, c, s):
 def hud(distance, fuel):
     paint(0, 0, f"DIST:{distance:>14}")
     fuelstring = "$" * m.ceil(fuel)
-    paint(0, NCOLS//2, f"FUEL:{fuelstring:>14}")
+    if fuel < 1:
+        paint(0, NCOLS//2, bcolors.RED + f"FUEL:{fuelstring:>14}" + bcolors.ENDC)
+    else:
+        paint(0, NCOLS//2, f"FUEL:{fuelstring:>14}")
     pass
 
 def player(dt):
