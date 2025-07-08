@@ -61,7 +61,7 @@ def paint(r, c, s):
     print(f"\033[{NROWS-r};{c+1}H{s}", end="")
 
 def paintif(r, c, s):
-    if r >= 0  and r < NROWS and c >= 0 and c < NCOLS:
+    if r >= 1  and r < NROWS and c >= 0 and c < NCOLS:
         paint(r, c, s)
 
 #paint upwards along a column
