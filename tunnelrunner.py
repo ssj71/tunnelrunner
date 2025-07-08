@@ -221,8 +221,8 @@ def updatestuff(dt):
         camera += camerachange
 
     cavify(advance, camerachange)
-    ded = collision()
     fuelify(dt, advance, camerachange)
+    ded = collision()
 
     you[1] %= 1.0
     if ded:
@@ -230,7 +230,7 @@ def updatestuff(dt):
         hud(int(distance//5), fuel)
         print("\nYou crashed! Game over. Press 'q' to exit.")
         running = False
-    elif vert:
+    else:
         paint(round(you[0] - camera), PLAYERCOL, bcolors.GREEN + bcolors.BOLD + ">" + bcolors.ENDC)
     hud(int(distance//5), fuel)
 
