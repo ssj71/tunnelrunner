@@ -26,6 +26,7 @@ fuel = 4
 gas = [0] * (NCOLS+1) #placement of fuel powerups
 gastime = 0
 camera = 0 #row offset
+cameratime = 0 #time since last camera move
 #cave stuff
 cavefloor = [1] * (NCOLS+1) #row change per col
 caveceil = [NROWS-1] * (NCOLS+1) #row change per col
@@ -154,14 +155,28 @@ def cavify(advance, camerachange):
             paintif(cavefloor[i] - camera, j, WALL)
     print("", sep="", end="", flush=True)
 
-def movecamera(you, camera):
+def movecamera(you, camera, dt):
     edge = 3
+    global cameratime
+    go = 0
+    if round(you[0] - camera) > NROWS // 2 + edge:
+        cameratime += dt
+        go = 1
+    elif round(you[0] - camera) < NROWS // 2 - edge:
+        cameratime += dt
+        go = -1
+    else:
+        cameratime = 0
     if round(you[0] - camera) > NROWS - edge:
+        cameratime = 0
         return 1
     elif round(you[0] - camera) < edge:
+        cameratime = 0
         return -1
-    else:
-        return 0
+    elif cameratime > 1.0:
+        cameratime = 0
+        return go
+    return 0
 
 def fuelify(dt, advance, camerachange):
     global camera, caveindex, gas, gastime
@@ -214,11 +229,12 @@ def updatestuff(dt):
     fuel = max(fuel, 0.0);
 
     advance = m.floor(you[1])
-    camerachange = 0
-    if vert != 0:
+    #if vert != 0:
+    #    paint(round(you[0] - camera - vert), PLAYERCOL, " ")
+    camerachange = movecamera(you, camera, dt)
+    if camerachange or vert:
         paint(round(you[0] - camera - vert), PLAYERCOL, " ")
-        camerachange = movecamera(you, camera)
-        camera += camerachange
+    camera += camerachange
 
     cavify(advance, camerachange)
     fuelify(dt, advance, camerachange)
