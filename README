@@ -1,10 +1,36 @@
-just a little game because I've never made a terminal game  before and I wanted to make something generative.
-it still has some bugs, but it is playable enough to have fun.
+##### # #### #### ##############################################################
+#####   ## # #### ##############################################################
+####    #       #  # ###########################################################
+   #                 # # #######################################################
+                         ## ####################################################
+                            ####################################################
+                             # #################################################
+                               #################################################
+                                # ##############################################
+                                # ##############################################
+  >                                 ############################################
+                                     #  ########################################
+                                     #  ### ####################################
+                  #                     # # ############## #####################
+                 ##                         ########### ##  ####################
+          # #  #####                         #### ## #       ###################
+    ##    # # ######    #     $              ## # #            #################
+   ##### ############ # #                         #            # ###############
+  ########################   #                                   ###############
+# ########################   ##                                     ######### ##
+# ######################## #####                                     ########  #
+################################                                        ###    #
+#################################                                              #
+DIST:            18                     FUEL:          $$$$
 
-just run the tunnelrunner.py file with python3.
 
-it does depend on pynput so you may need to install that with pip3 install pynput
+just a little game because I've never made a terminal game  before and I wanted
+to make something generative.
 
-control it with wasd, vim keys, or arrow keys. q or esc to quit.
+Just run the tunnelrunner.py file with python3.
 
-go as far as you can without hitting the walls or running out of fuel.
+It does depend on pynput so you may need to install that with `pip3 install pynput`
+
+Control it with wasd, vim keys, or arrow keys; q or esc to quit.
+
+Go as far as you can without hitting the walls or running out of fuel.
